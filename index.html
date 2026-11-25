@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ESP32 · MC4012 Sensores y Actuadores · EAFIT</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700;800&family=Atkinson+Hyperlegible:wght@400;700&display=swap">
+<style>
+:root{--bg:#eef2f3;--sf:#fff;--ink:#14213d;--mut:#51607a;--ln:#c9d3d8;--gr:#1f6f54;--gd:#b8851f;--rd:#c8403f;--bl:#2e6fb7;--code:#14213d;--codet:#e8eef5;--hi:#fff4d6;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f1a1c;--sf:#16262a;--ink:#e6eef0;--mut:#9fb2b8;--ln:#2c4146;--gr:#4fc29a;--gd:#e0b24f;--rd:#ef7774;--bl:#7fb2ee;--code:#0a1214;--hi:#3a3216}}
+:root[data-theme="dark"]{--bg:#0f1a1c;--sf:#16262a;--ink:#e6eef0;--mut:#9fb2b8;--ln:#2c4146;--gr:#4fc29a;--gd:#e0b24f;--rd:#ef7774;--bl:#7fb2ee;--code:#0a1214;--hi:#3a3216}
+html{scroll-padding-top:70px}
+body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.6 "Atkinson Hyperlegible",system-ui,sans-serif}
+h1,h2,h3{font-family:"Bricolage Grotesque",system-ui,sans-serif;line-height:1.15;margin:0 0 .5em}
+h1{font-size:clamp(2rem,6vw,3.4rem);font-weight:800}h2{font-size:1.7rem;margin-top:2.2em}h3{font-size:1.15rem}
+main{max-width:980px;margin:0 auto;padding:0 18px 60px}
+header{padding:34px 18px 8px;max-width:980px;margin:0 auto}
+header p{max-width:62ch;color:var(--mut)}
+nav{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);border-bottom:2px solid var(--ink);display:flex;gap:6px;padding:8px 18px;max-width:980px;margin:0 auto}
+nav button{font:700 1rem "Bricolage Grotesque",sans-serif;padding:8px 18px;border:2px solid var(--ink);background:var(--sf);color:var(--ink);border-radius:8px 8px 0 0;cursor:pointer}
+nav button[aria-selected=true]{background:var(--ink);color:var(--bg)}
+:focus-visible{outline:3px solid var(--bl);outline-offset:2px}
+section[hidden]{display:none}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px}
+.box{background:var(--sf);border:1px solid var(--ln);border-radius:8px;padding:14px 16px}
+.box b{font-family:"Bricolage Grotesque",sans-serif;font-size:1.3rem;display:block;color:var(--gr)}
+.warn{border-left:6px solid var(--rd)}.tip{border-left:6px solid var(--gr)}
+code,pre{font-family:ui-monospace,Consolas,monospace;font-size:.88rem}
+code{background:var(--hi);padding:1px 5px;border-radius:4px}
+pre{background:var(--code);color:var(--codet);padding:14px;border-radius:8px;overflow-x:auto;margin:10px 0}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
+.chip{border:2px solid var(--ink);background:var(--sf);color:var(--ink);padding:5px 12px;border-radius:99px;cursor:pointer;font:inherit;font-size:.9rem}
+.chip[aria-pressed=true]{background:var(--ink);color:var(--bg)}
+.pinwrap{display:grid;grid-template-columns:1fr minmax(0,1fr);gap:18px;align-items:start}
+@media(max-width:720px){.pinwrap{grid-template-columns:1fr}}
+.pcb{display:grid;grid-template-columns:1fr 92px 1fr;background:var(--gr);border-radius:10px;padding:10px 6px;color:#fff;border:3px solid var(--ink)}
+.pcb .col{display:flex;flex-direction:column;gap:3px}
+.pcb .mid{background:#0d2a22;border-radius:6px;margin:0 6px;display:flex;flex-direction:column;align-items:center;justify-content:space-between;padding:8px 2px;font-size:.7rem;text-align:center;color:#cfe}
+.pin{border:0;font:700 .82rem ui-monospace,monospace;padding:5px 8px;cursor:pointer;background:var(--gd);color:#14213d;border-radius:3px;transition:opacity .15s}
+.col.l .pin{text-align:left;margin-right:0}.col.r .pin{text-align:right}
+.pin.dim{opacity:.22}.pin.sel{outline:3px solid #fff;background:#fff}
+.pin.pw{background:var(--rd);color:#fff}.pin.gn{background:#222;color:#fff}
+.usb{width:34px;height:16px;background:#9aa;border-radius:3px 3px 0 0}
+#info{background:var(--sf);border:2px solid var(--ink);border-radius:8px;padding:14px 16px;min-height:150px;position:sticky;top:70px}
+.tag{display:inline-block;font-size:.78rem;padding:1px 8px;border-radius:99px;background:var(--hi);margin:0 4px 4px 0}
+details{background:var(--sf);border:1px solid var(--ln);border-radius:8px;margin:8px 0;padding:0 16px}
+summary{cursor:pointer;font:700 1.05rem "Bricolage Grotesque",sans-serif;padding:12px 0}
+details[open]{padding-bottom:12px}
+table{border-collapse:collapse;width:100%;background:var(--sf)}th,td{border:1px solid var(--ln);padding:8px 10px;text-align:left;font-size:.93rem;vertical-align:top}th{background:var(--ink);color:var(--bg)}
+.scroll{overflow-x:auto}
+.step{display:grid;grid-template-columns:44px 1fr;gap:14px;margin:26px 0}
+.step>i{font:800 1.3rem "Bricolage Grotesque",sans-serif;font-style:normal;width:44px;height:44px;border-radius:50%;background:var(--ink);color:var(--bg);display:grid;place-items:center}
+.lab{display:grid;grid-template-columns:1.2fr 1fr;gap:14px}
+@media(max-width:760px){.lab{grid-template-columns:1fr}}
+.seg{display:block;cursor:pointer;border-radius:4px;padding:1px 4px;margin:0 -4px;white-space:pre}
+.seg:hover,.seg.on{background:#27406a}
+.seg.on{outline:2px solid var(--gd)}
+button.run{font:700 1rem "Bricolage Grotesque",sans-serif;background:var(--gr);color:#fff;border:0;border-radius:6px;padding:8px 16px;cursor:pointer;margin-right:6px}
+button.run.st{background:var(--rd)}
+.led{width:34px;height:34px;border-radius:50%;background:#553;border:3px solid var(--ink);display:inline-block;vertical-align:middle;transition:background .1s,box-shadow .1s}
+.led.on{background:#ffd23f;box-shadow:0 0 22px 6px #ffd23f}
+#ser{background:var(--code);color:#7fe3b4;font-family:ui-monospace,monospace;font-size:.85rem;height:150px;overflow-y:auto;padding:8px;border-radius:6px;margin-top:8px}
+.ok{color:var(--gr);font-weight:700}.ko{color:var(--rd);font-weight:700}
+.q{margin:14px 0}.q button{display:block;width:100%;text-align:left;margin:5px 0;padding:8px 12px;border:2px solid var(--ln);border-radius:6px;background:var(--sf);color:var(--ink);font:inherit;cursor:pointer}
+.q button.good{border-color:var(--gr)}.q button.bad{border-color:var(--rd)}
+progress{width:100%;height:14px;accent-color:var(--gr)}
+label.ck{display:block;padding:4px 0;cursor:pointer}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+.course{display:inline-block;background:var(--ink);color:var(--bg);font:700 .85rem "Bricolage Grotesque",sans-serif;padding:4px 12px;border-radius:6px;margin:0 0 14px}
+nav{overflow-x:auto}nav button{white-space:nowrap}
+.pr{background:var(--sf);border:1px solid var(--ln);border-radius:8px;padding:6px 18px 14px;margin:22px 0}
+.pr h3{font-size:1.3rem;margin-top:.8em}
+.leg{font-size:.85rem;color:var(--mut)}
+footer{max-width:980px;margin:0 auto;padding:18px;color:var(--mut);font-size:.9rem;border-top:2px solid var(--ink)}
+button.chip{margin:4px 0}
+</style></head><body>
+<header><span class="course">MC4012 · Sensores y Actuadores · Ingeniería Mecánica · Universidad EAFIT</span><h1>ESP32: de la placa al primer programa</h1>
+<p>Una guía para tocar y explorar. Empieza por el hardware (qué trae la placa y cómo conectarla) y sigue con el software (cómo programarla con Arduino IDE). Todo lo resaltado en el pinout y en el simulador es clicable.</p></header>
+<nav role="tablist"><button role="tab" id="t-hardware" aria-selected="true">Hardware</button><button role="tab" id="t-software" aria-selected="false">Software</button><button role="tab" id="t-conectividad" aria-selected="false">Conectividad</button><button role="tab" id="t-practicas" aria-selected="false">Prácticas</button></nav>
+<main>
+<section id="hardware">
+<h2>1. ¿Qué es el ESP32?</h2>
+<p>Es un microcontrolador de Espressif con WiFi y Bluetooth integrados. Se vende montado en una placa de desarrollo (DevKit) que añade USB, regulador de voltaje y botones. Aquí usamos como modelo la DevKit de 30 pines.</p>
+<div class="grid">
+<div class="box"><b>2 núcleos</b>Xtensa LX6 hasta 240 MHz</div>
+<div class="box"><b>520 KB</b>de RAM (SRAM); 4 MB de memoria flash en la mayoría de módulos</div>
+<div class="box"><b>WiFi + BT</b>WiFi 2.4 GHz (802.11 b/g/n), Bluetooth clásico y BLE</div>
+<div class="box"><b>3,3 V</b>Todo el chip trabaja a 3,3 V, no a 5 V</div>
+<div class="box"><b>~25 GPIO</b>utilizables en la DevKit, con ADC, DAC, PWM, touch, I2C, SPI y UART</div>
+</div>
+
+<h2>2. Pinout interactivo</h2>
+<p>Toca un pin para ver qué hace. Usa los filtros para resaltar un tipo de función.</p>
+<div class="chips" id="chips"></div>
+<div class="pinwrap"><div class="pcb"><div class="col l" id="cl"></div><div class="mid"><span>Antena WiFi / BT</span><span>ESP32<br>WROOM-32</span><span>botones<br>EN · BOOT</span><div class="usb" title="USB"></div></div><div class="col r" id="cr"></div></div>
+<div id="info" aria-live="polite"><h3>Elige un pin</h3><p>Los rojos son alimentación, los negros son tierra (GND) y los dorados son pines de señal.</p></div></div>
+
+<h2>3. Recursos de la placa</h2>
+<p>Abre cada recurso para ver qué es, cómo se usa y un ejemplo mínimo.</p>
+<details><summary>GPIO digitales (entrada y salida)</summary><p>Cada pin puede ser salida (3,3 V o 0 V) o entrada. Como entrada con un botón, usa la resistencia interna <code>INPUT_PULLUP</code>: el pin lee 1 en reposo y 0 al pulsar.</p><pre>pinMode(2, OUTPUT);  digitalWrite(2, HIGH);
+pinMode(4, INPUT_PULLUP);  int b = digitalRead(4);</pre></details>
+<details><summary>ADC: leer voltajes analógicos</summary><p>Convierte un voltaje de 0 a 3,3 V en un número de 0 a 4095 (12 bits). Úsalo con potenciómetros, LDR y sensores analógicos. Prefiere los pines ADC1 (32 a 39): el ADC2 no funciona mientras el WiFi está activo. La lectura no es muy lineal en los extremos.</p><pre>int v = analogRead(34);          // 0..4095
+float volt = v * 3.3 / 4095.0;</pre></details>
+<details><summary>DAC: generar voltajes analógicos</summary><p>Solo GPIO25 y GPIO26 tienen DAC de 8 bits (0 a 255, equivale a 0 a 3,3 V). Sirve para tonos simples o referencias de voltaje.</p><pre>dacWrite(25, 128);  // aprox. 1,65 V</pre></details>
+<details><summary>PWM (LEDC): brillo y motores</summary><p>Casi cualquier pin de salida puede generar PWM, con hasta 16 canales. Alterna encendido y apagado muy rápido; el porcentaje de tiempo encendido controla el brillo de un LED o la velocidad de un motor.</p><pre>ledcAttach(4, 5000, 8);   // pin, frecuencia, bits (core 3.x)
+ledcWrite(4, 128);        // 50% de brillo</pre></details>
+<details><summary>Sensores táctiles (touch)</summary><p>Diez pines (T0 a T9) detectan el roce de un dedo sin botón físico. El valor baja cuando tocas el pin.</p><pre>int t = touchRead(T0);   // GPIO4</pre></details>
+<details><summary>UART, I2C y SPI (comunicación)</summary><p><b>UART</b>: dos hilos TX/RX, para GPS, módulos y el monitor serie (UART0 va al USB). <b>I2C</b>: dos hilos SDA y SCL para muchos sensores y pantallas OLED con direcciones distintas (por defecto GPIO21 y GPIO22). <b>SPI</b>: cuatro hilos (MOSI, MISO, SCK, SS), más rápido, para tarjetas SD y pantallas TFT (VSPI: 23, 19, 18, 5).</p><pre>Wire.begin(21, 22);  // I2C
+Serial2.begin(9600, SERIAL_8N1, 16, 17);  // UART2</pre></details>
+<details><summary>WiFi y Bluetooth</summary><p>Se usan por software, sin hardware externo. Con WiFi puedes conectarte a tu red, crear un servidor web o enviar datos a internet. Con BLE puedes comunicarte con el celular. La antena está en el módulo: no pongas metal ni la tapes.</p><pre>#include &lt;WiFi.h&gt;
+WiFi.begin("MiRed", "clave");</pre></details>
+<details><summary>Ahorro de energía (deep sleep)</summary><p>El chip puede dormir y despertar por un temporizador, un pin o un toque. Dormido consume microamperios en el chip (la placa, por su regulador y el conversor USB, consume bastante más). Útil para proyectos con batería.</p><pre>esp_sleep_enable_timer_wakeup(10 * 1000000ULL); // 10 s
+esp_deep_sleep_start();</pre></details>
+<details><summary>Botones y LED de la placa</summary><p><b>EN</b>: reinicia el programa. <b>BOOT</b> (GPIO0): se mantiene pulsado para entrar en modo de carga si la placa no se programa sola. En muchas placas hay un LED en GPIO2 para pruebas, pero no todas lo traen.</p></details>
+
+<h2>4. Cómo conectarla</h2>
+<div class="grid">
+<div class="box tip"><h3>Alimentación</h3>Por USB (5 V) lo más simple. Si usas el pin <code>VIN</code>, entrega 5 V (el regulador baja a 3,3 V). El pin <code>3V3</code> sale a 3,3 V para sensores pequeños. Comparte siempre GND entre la placa y tus componentes.</div>
+<div class="box warn"><h3>Los pines no soportan 5 V</h3>Una señal de 5 V en un GPIO puede dañar el chip. Con sensores de 5 V usa un convertidor de nivel o un divisor de voltaje.</div>
+<div class="box warn"><h3>Corriente por pin</h3>Un pin entrega poca corriente (aprox. 12 mA es una cifra prudente; el máximo absoluto ronda los 40 mA). Un LED necesita resistencia de 220 a 330 Ω. Motores, relés y tiras LED se conectan con transistor o driver y fuente propia.</div>
+<div class="box warn"><h3>Pines que debes evitar</h3>GPIO6 a 11 están ocupados por la memoria flash: no los uses. Los pines 0, 2, 5, 12 y 15 son de arranque (strapping): si los fuerzas a un nivel incorrecto al encender, la placa no arranca.</div>
+</div>
+<h3 style="margin-top:1.4em">Conexiones típicas</h3>
+<div class="scroll"><table><tr><th>Componente</th><th>Conexión</th></tr>
+<tr><td>LED</td><td>GPIO (p. ej. 4) → resistencia 220 Ω → patita larga del LED; patita corta → GND</td></tr>
+<tr><td>Pulsador</td><td>Un lado a GPIO (p. ej. 15) y el otro a GND; en código, <code>INPUT_PULLUP</code></td></tr>
+<tr><td>Potenciómetro</td><td>Extremos a 3V3 y GND; pin central a GPIO34 (ADC1)</td></tr>
+<tr><td>Sensor/pantalla I2C</td><td>VCC a 3V3, GND a GND, SDA a GPIO21, SCL a GPIO22</td></tr>
+<tr><td>Servo</td><td>Señal a un GPIO con PWM; alimentación de 5 V externa con GND común</td></tr></table></div>
+</section>
+
+<section id="conectividad" hidden>
+<h2>WiFi en profundidad</h2>
+<p>El ESP32 puede conectarse a una red, crear la suya o ambas cosas. Tres ideas básicas: la red se identifica con un <b>SSID</b>, cada dispositivo recibe una <b>dirección IP</b> (por DHCP) y los servicios se ofrecen por <b>puertos</b> (la web usa el 80).</p>
+<div class="scroll"><table><tr><th>Modo</th><th>Qué hace</th><th>Cuándo usarlo</th></tr>
+<tr><td><code>WIFI_STA</code></td><td>Se conecta a un router o al hotspot del celular</td><td>Enviar datos a internet o ser accesible desde la red local</td></tr>
+<tr><td><code>WIFI_AP</code></td><td>Crea su propia red (IP por defecto 192.168.4.1)</td><td>Prácticas sin router; el celular se conecta directo a la placa</td></tr>
+<tr><td><code>WIFI_AP_STA</code></td><td>Ambos a la vez</td><td>Casos avanzados</td></tr></table></div>
+<div class="box warn" style="margin:12px 0"><b style="font-size:1rem">Ojo con la red</b>Solo trabaja en 2,4 GHz: si usas el hotspot del celular, desactiva la banda de 5 GHz. Las redes que piden usuario y contraseña (WPA2-Enterprise) no funcionan con <code>WiFi.begin(red, clave)</code>; en clase usa un hotspot o el modo AP. Mientras el WiFi está activo, el ADC2 no funciona (usa GPIO32 a 39). Nunca publiques tu clave WiFi en un repositorio.</div>
+<h3>Ejemplo 1: escáner de redes (modo STA)</h3>
+<p>Lista las redes cercanas con su intensidad de señal (RSSI: más cercano a 0 dBm es mejor señal; -50 es excelente, -80 es débil).</p>
+<pre class="cp">#include &lt;WiFi.h&gt;
+
+void setup() {
+  Serial.begin(115200);
+  WiFi.mode(WIFI_STA);
+  WiFi.disconnect();
+  delay(100);
+}
+
+void loop() {
+  int n = WiFi.scanNetworks();
+  Serial.printf("%d redes encontradas\n", n);
+  for (int i = 0; i &lt; n; i++) {
+    Serial.printf("%2d  %-24s  %4d dBm  canal %d\n",
+                  i + 1, WiFi.SSID(i).c_str(), WiFi.RSSI(i), WiFi.channel(i));
+  }
+  delay(5000);
+}</pre>
+<h3>Ejemplo 2: servidor web que controla un LED</h3>
+<p>Cambia <code>RED</code> y <code>CLAVE</code>. Al conectarse, el monitor serie muestra la IP; escríbela en el navegador de un celular o PC conectado a la misma red.</p>
+<pre class="cp">#include &lt;WiFi.h&gt;
+#include &lt;WebServer.h&gt;
+
+const char* RED = "TU_RED";
+const char* CLAVE = "TU_CLAVE";
+const int LED = 2;
+WebServer server(80);
+bool ledOn = false;
+
+String pagina() {
+  String h = "&lt;meta name='viewport' content='width=device-width,initial-scale=1'&gt;";
+  h += "&lt;h1&gt;ESP32 EAFIT&lt;/h1&gt;&lt;p&gt;LED: &lt;b&gt;";
+  h += ledOn ? "ENCENDIDO" : "APAGADO";
+  h += "&lt;/b&gt;&lt;/p&gt;&lt;a href='/on'&gt;&lt;button&gt;Encender&lt;/button&gt;&lt;/a&gt; ";
+  h += "&lt;a href='/off'&gt;&lt;button&gt;Apagar&lt;/button&gt;&lt;/a&gt;";
+  return h;
+}
+
+void poner(bool v) {
+  ledOn = v;
+  digitalWrite(LED, v);
+  server.sendHeader("Location", "/");
+  server.send(303);
+}
+
+void setup() {
+  Serial.begin(115200);
+  pinMode(LED, OUTPUT);
+  WiFi.mode(WIFI_STA);
+  WiFi.begin(RED, CLAVE);
+  Serial.print("Conectando");
+  while (WiFi.status() != WL_CONNECTED) { delay(500); Serial.print("."); }
+  Serial.print("\nAbre en el navegador: http://");
+  Serial.println(WiFi.localIP());
+  server.on("/", []() { server.send(200, "text/html; charset=utf-8", pagina()); });
+  server.on("/on", []() { poner(true); });
+  server.on("/off", []() { poner(false); });
+  server.begin();
+}
+
+void loop() {
+  server.handleClient();
+}</pre>
+<h3>Ejemplo 3: crear tu propia red (modo AP)</h3>
+<p>Reemplaza el bloque de conexión del ejemplo 2 por esto. Luego conecta el celular a la red <code>ESP32-EAFIT</code> y abre <code>192.168.4.1</code>. La clave debe tener al menos 8 caracteres.</p>
+<pre class="cp">WiFi.mode(WIFI_AP);
+WiFi.softAP("ESP32-EAFIT", "12345678");
+Serial.println(WiFi.softAPIP());   // 192.168.4.1</pre>
+<h3>Ejemplo 4: cliente HTTP, enviar datos a la nube</h3>
+<p>Envía una lectura del potenciómetro (GPIO34) a ThingSpeak (servicio gratuito, requiere cuenta y un canal con “Write API Key”). Su límite gratuito es una escritura cada 15 s.</p>
+<pre class="cp">#include &lt;WiFi.h&gt;
+#include &lt;HTTPClient.h&gt;
+
+const char* RED = "TU_RED";
+const char* CLAVE = "TU_CLAVE";
+const char* API_KEY = "TU_WRITE_API_KEY";
+
+void setup() {
+  Serial.begin(115200);
+  WiFi.begin(RED, CLAVE);
+  while (WiFi.status() != WL_CONNECTED) delay(500);
+  Serial.println("WiFi OK");
+}
+
+void loop() {
+  if (WiFi.status() == WL_CONNECTED) {
+    HTTPClient http;
+    String url = String("http://api.thingspeak.com/update?api_key=") + API_KEY
+                 + "&amp;field1=" + analogRead(34);
+    http.begin(url);
+    int codigo = http.GET();           // 200 = correcto
+    Serial.printf("Respuesta HTTP: %d\n", codigo);
+    http.end();
+  }
+  delay(20000);
+}</pre>
+
+<h2>Bluetooth Low Energy (BLE) en profundidad</h2>
+<p>BLE está pensado para enviar pocos datos con muy poco consumo (sensores, wearables). El celular es el <b>central</b> (cliente) y el ESP32 el <b>periférico</b> (servidor). Funciona así:</p>
+<ul><li><b>Advertising</b>: el ESP32 “grita” su nombre para que lo encuentren.</li>
+<li><b>Servicio</b>: un grupo de datos relacionados, identificado con un UUID.</li>
+<li><b>Característica</b>: un dato dentro del servicio, con propiedades: <code>READ</code> (se lee), <code>WRITE</code> (el celular escribe) y <code>NOTIFY</code> (el ESP32 avisa cuando cambia).</li></ul>
+<div class="scroll"><table><tr><th></th><th>WiFi</th><th>BLE</th></tr>
+<tr><td>Datos</td><td>Mucho (páginas web, archivos)</td><td>Poco (lecturas, comandos)</td></tr>
+<tr><td>Consumo</td><td>Alto</td><td>Bajo</td></tr>
+<tr><td>Necesita router</td><td>Sí (o modo AP)</td><td>No, conexión directa</td></tr>
+<tr><td>Ideal para</td><td>Internet, dashboards</td><td>Control desde celular, wearables</td></tr></table></div>
+<h3>Ejemplo 5: servidor BLE con notificaciones y LED</h3>
+<p>Instala en el celular la app gratuita <b>nRF Connect</b>. Escanea, conecta con <code>ESP32-EAFIT</code>, activa las notificaciones de la primera característica (verás un contador) y escribe <code>1</code> o <code>0</code> como texto en la segunda para encender o apagar el LED. Si el compilador dice que el programa es demasiado grande, elige <b>Herramientas → Partition Scheme → Huge APP</b>.</p>
+<pre class="cp">#include &lt;BLEDevice.h&gt;
+#include &lt;BLEServer.h&gt;
+#include &lt;BLEUtils.h&gt;
+#include &lt;BLE2902.h&gt;
+
+#define SERVICE_UUID "4fafc201-1fb5-459e-8fcc-c5c9c331914b"
+#define CHAR_DATO    "beb5483e-36e1-4688-b7f5-ea07361b26a8"
+#define CHAR_LED     "d1e3b6a2-5c4f-4a8e-9b1d-2f6c7a8e9f01"
+
+const int LED = 2;
+BLECharacteristic *cDato;
+bool conectado = false;
+
+class Servidor : public BLEServerCallbacks {
+  void onConnect(BLEServer *s) { conectado = true; }
+  void onDisconnect(BLEServer *s) {
+    conectado = false;
+    BLEDevice::startAdvertising();   // permite reconectar
+  }
+};
+
+class EscrituraLed : public BLECharacteristicCallbacks {
+  void onWrite(BLECharacteristic *c) {
+    auto v = c-&gt;getValue();
+    digitalWrite(LED, (v.length() &amp;&amp; v[0] == '1') ? HIGH : LOW);
+  }
+};
+
+void setup() {
+  Serial.begin(115200);
+  pinMode(LED, OUTPUT);
+  BLEDevice::init("ESP32-EAFIT");
+  BLEServer *srv = BLEDevice::createServer();
+  srv-&gt;setCallbacks(new Servidor());
+  BLEService *svc = srv-&gt;createService(SERVICE_UUID);
+
+  cDato = svc-&gt;createCharacteristic(CHAR_DATO,
+          BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_NOTIFY);
+  cDato-&gt;addDescriptor(new BLE2902());
+
+  BLECharacteristic *cLed = svc-&gt;createCharacteristic(CHAR_LED,
+          BLECharacteristic::PROPERTY_WRITE);
+  cLed-&gt;setCallbacks(new EscrituraLed());
+
+  svc-&gt;start();
+  BLEDevice::getAdvertising()-&gt;addServiceUUID(SERVICE_UUID);
+  BLEDevice::startAdvertising();
+  Serial.println("BLE listo: busca ESP32-EAFIT");
+}
+
+void loop() {
+  static int n = 0;
+  if (conectado) {
+    String s = String(n++);
+    cDato-&gt;setValue(s.c_str());
+    cDato-&gt;notify();
+  }
+  delay(1000);
+}</pre>
+<div class="box tip"><b style="font-size:1rem">Para pensar</b>Cambia el contador por la lectura de un sensor (ver práctica 3) y úsalo para telemetría sin necesidad de red. ¿Qué ventaja tiene BLE frente a WiFi en un robot móvil alimentado con baterías?</div>
+<h2>ESP-NOW: comunicación directa entre placas</h2>
+<p>Es un protocolo de Espressif que usa la radio WiFi para enviar mensajes de hasta <b>250 bytes</b> entre ESP32 <b>sin router ni conexión a internet</b>. Cada placa se identifica por su <b>dirección MAC</b> (no por IP). Tiene muy baja latencia y es ideal para control remoto de un robot o una red de sensores en un laboratorio. Puede enviar a un destino (unicast) o a todos (broadcast), y admite hasta 20 pares.</p>
+<div class="box warn" style="margin:12px 0"><b style="font-size:1rem">Pasos</b>1) Carga el receptor y copia la MAC que imprime en el monitor serie. 2) Pega esa MAC en el emisor (formato <code>0xAA</code>, separado por comas). 3) Carga el emisor. Si además te conectas a un router, ESP-NOW usa el canal de ese router: ambas placas deben estar en el mismo canal.</div>
+<h3>Ejemplo 6: receptor ESP-NOW</h3>
+<pre class="cp">#include &lt;WiFi.h&gt;
+#include &lt;esp_now.h&gt;
+
+typedef struct {
+  int id;
+  float valor;
+} Mensaje;
+Mensaje msg;
+
+// Firma para el paquete ESP32 3.x (en 2.x el primer parámetro es const uint8_t *mac)
+void alRecibir(const esp_now_recv_info_t *info, const uint8_t *datos, int len) {
+  if (len != sizeof(msg)) return;
+  memcpy(&amp;msg, datos, sizeof(msg));
+  Serial.printf("id=%d  valor=%.2f V\n", msg.id, msg.valor);
+}
+
+void setup() {
+  Serial.begin(115200);
+  WiFi.mode(WIFI_STA);
+  Serial.print("Mi MAC: ");
+  Serial.println(WiFi.macAddress());
+  if (esp_now_init() != ESP_OK) {
+    Serial.println("Error iniciando ESP-NOW");
+    return;
+  }
+  esp_now_register_recv_cb(alRecibir);
+}
+
+void loop() {}</pre>
+<h3>Ejemplo 7: emisor ESP-NOW</h3>
+<p>Envía la lectura de un potenciómetro (GPIO34) cada segundo.</p>
+<pre class="cp">#include &lt;WiFi.h&gt;
+#include &lt;esp_now.h&gt;
+
+// MAC del receptor: reemplázala por la que imprimió tu placa
+uint8_t destino[] = {0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF};
+
+typedef struct {
+  int id;
+  float valor;
+} Mensaje;
+Mensaje msg;
+
+void setup() {
+  Serial.begin(115200);
+  WiFi.mode(WIFI_STA);
+  if (esp_now_init() != ESP_OK) {
+    Serial.println("Error iniciando ESP-NOW");
+    return;
+  }
+  esp_now_peer_info_t par = {};
+  memcpy(par.peer_addr, destino, 6);
+  par.channel = 0;          // 0 = canal actual
+  par.encrypt = false;
+  if (esp_now_add_peer(&amp;par) != ESP_OK) {
+    Serial.println("No se pudo agregar el receptor");
+  }
+}
+
+void loop() {
+  msg.id = 1;
+  msg.valor = analogRead(34) * 3.3 / 4095.0;
+  esp_err_t r = esp_now_send(destino, (uint8_t *)&amp;msg, sizeof(msg));
+  Serial.println(r == ESP_OK ? "Enviado" : "Fallo al enviar");
+  delay(1000);
+}</pre>
+<p><b>Reto:</b> el receptor enciende un LED cuando <code>valor</code> pasa de 2,0 V, y envía de vuelta una confirmación (necesitará registrar al emisor como par).</p>
+
+<h2>MQTT: publicar y suscribirse</h2>
+<p>MQTT es el protocolo más usado en IoT. Los dispositivos no hablan entre sí: todos se conectan a un <b>broker</b> (servidor). Quien tiene un dato lo <b>publica</b> en un <b>tópico</b> (por ejemplo <code>eafit/mc4012/ana/adc</code>) y todos los que estén <b>suscritos</b> a ese tópico lo reciben. Funciona sobre WiFi y necesita internet o un broker en tu red.</p>
+<pre>ESP32 (sensor) --publica--&gt; [ BROKER ] --entrega--&gt; PC / celular / otro ESP32
+                              ^                          (suscritos al tópico)
+PC / celular   --publica------+   (ej. orden "1" al tópico del LED)</pre>
+<div class="box warn" style="margin:12px 0"><b style="font-size:1rem">Broker público de pruebas</b>El ejemplo usa <code>test.mosquitto.org</code>, abierto, sin clave y sin cifrado: cualquiera puede leer tus mensajes. Úsalo solo para aprender, no envíes datos sensibles y cambia <code>TU_NOMBRE</code> por algo único para no mezclarte con otros estudiantes. Para proyectos reales usa un broker propio (por ejemplo Mosquitto en una Raspberry Pi) con usuario y TLS.</div>
+<h3>Ejemplo 8: cliente MQTT (publica el ADC y recibe órdenes para el LED)</h3>
+<p><b>Librería:</b> “PubSubClient” de Nick O’Leary. Para probar, usa una aplicación cliente como MQTT Explorer o MQTTX en el computador: suscríbete a <code>eafit/mc4012/TU_NOMBRE/#</code> y publica <code>1</code> o <code>0</code> en el tópico <code>.../led</code>.</p>
+<pre class="cp">#include &lt;WiFi.h&gt;
+#include &lt;PubSubClient.h&gt;
+
+const char* RED = "TU_RED";
+const char* CLAVE = "TU_CLAVE";
+const char* BROKER = "test.mosquitto.org";
+const int PUERTO = 1883;
+const char* T_ADC = "eafit/mc4012/TU_NOMBRE/adc";
+const char* T_LED = "eafit/mc4012/TU_NOMBRE/led";
+const int LED = 2;
+
+WiFiClient wifi;
+PubSubClient mqtt(wifi);
+
+void alMensaje(char* topic, byte* payload, unsigned int len) {
+  String s;
+  for (unsigned int i = 0; i &lt; len; i++) s += (char)payload[i];
+  Serial.printf("[%s] %s\n", topic, s.c_str());
+  if (String(topic) == T_LED) digitalWrite(LED, s == "1" ? HIGH : LOW);
+}
+
+void conectarMQTT() {
+  while (!mqtt.connected()) {
+    String id = "esp32-" + String((uint32_t)ESP.getEfuseMac(), HEX);
+    Serial.print("Conectando a MQTT... ");
+    if (mqtt.connect(id.c_str())) {
+      Serial.println("OK");
+      mqtt.subscribe(T_LED);
+    } else {
+      Serial.printf("fallo (rc=%d), reintento en 3 s\n", mqtt.state());
+      delay(3000);
+    }
+  }
+}
+
+void setup() {
+  Serial.begin(115200);
+  pinMode(LED, OUTPUT);
+  WiFi.begin(RED, CLAVE);
+  while (WiFi.status() != WL_CONNECTED) delay(500);
+  Serial.println("WiFi OK");
+  mqtt.setServer(BROKER, PUERTO);
+  mqtt.setCallback(alMensaje);
+}
+
+void loop() {
+  if (!mqtt.connected()) conectarMQTT();
+  mqtt.loop();                      // atiende los mensajes entrantes
+
+  static unsigned long t = 0;
+  if (millis() - t &gt; 2000) {
+    t = millis();
+    char buf[8];
+    snprintf(buf, sizeof(buf), "%d", analogRead(34));
+    mqtt.publish(T_ADC, buf);
+  }
+}</pre>
+<p><b>Conceptos para profundizar:</b> <b>QoS</b> (0 = como máximo una vez, 1 = al menos una vez; PubSubClient solo suscribe en 0 o 1), <b>retain</b> (el broker guarda el último valor para quien se suscriba después) y los comodines <code>+</code> y <code>#</code> en las suscripciones.</p>
+
+<h2>¿Cuál protocolo elijo?</h2>
+<div class="scroll"><table><tr><th></th><th>HTTP / Web</th><th>BLE</th><th>ESP-NOW</th><th>MQTT</th></tr>
+<tr><td>Necesita router</td><td>Sí (o AP)</td><td>No</td><td>No</td><td>Sí + broker</td></tr>
+<tr><td>Datos</td><td>Mucho</td><td>Poco</td><td>Hasta 250 bytes</td><td>Poco o medio</td></tr>
+<tr><td>Se comunica con</td><td>Navegador, nube</td><td>Celular</td><td>Otros ESP32</td><td>Muchos dispositivos y la nube</td></tr>
+<tr><td>Ideal para</td><td>Páginas de control</td><td>App móvil, bajo consumo</td><td>Control remoto, red de sensores local</td><td>Telemetría y dashboards</td></tr></table></div>
+</section>
+
+<section id="practicas" hidden>
+<h2>Prácticas con sensores y actuadores</h2>
+<p>Cuatro prácticas progresivas. Cada una incluye el diagrama de cableado y el código completo. Monta siempre el circuito con la placa desconectada del USB.</p>
+<p class="leg">Leyenda de los diagramas: <b style="color:var(--rd)">rojo</b> = alimentación, <b>negro</b> = GND, <b style="color:var(--bl)">azul</b> = señal. El zigzag es una resistencia.</p>
+
+<div class="pr"><h3>Práctica 1: pulsador que alterna un LED</h3>
+<p><b>Materiales:</b> LED, resistencia de 220 Ω, pulsador, protoboard. <b>Conceptos:</b> salida digital, entrada con <code>INPUT_PULLUP</code>, antirrebote con <code>millis()</code>.</p>
+<div id="d1"></div>
+<pre class="cp">const int LED = 4;
+const int BTN = 13;
+bool estado = false;
+bool previo = HIGH;
+unsigned long t0 = 0;
+
+void setup() {
+  Serial.begin(115200);
+  pinMode(LED, OUTPUT);
+  pinMode(BTN, INPUT_PULLUP);
+}
+
+void loop() {
+  bool lectura = digitalRead(BTN);
+  if (previo == HIGH &amp;&amp; lectura == LOW &amp;&amp; millis() - t0 &gt; 50) {
+    estado = !estado;
+    digitalWrite(LED, estado);
+    Serial.println(estado ? "LED encendido" : "LED apagado");
+    t0 = millis();
+  }
+  previo = lectura;
+}</pre>
+<p><b>Reto:</b> haz que el LED parpadee mientras el botón esté pulsado. <b>Pregunta:</b> ¿por qué el pulsador no necesita resistencia externa?</p></div>
+
+<div class="pr"><h3>Práctica 2: potenciómetro y brillo con PWM</h3>
+<p><b>Materiales:</b> potenciómetro de 10 kΩ, LED, resistencia de 220 Ω. <b>Conceptos:</b> ADC de 12 bits, <code>map()</code>, PWM.</p>
+<div id="d2"></div>
+<pre class="cp">const int POT = 34;
+const int LED = 4;
+
+void setup() {
+  Serial.begin(115200);
+  ledcAttach(LED, 5000, 8);          // pin, frecuencia (Hz), resolución (bits)
+}
+
+void loop() {
+  int lectura = analogRead(POT);                 // 0 a 4095
+  int duty = map(lectura, 0, 4095, 0, 255);      // 0 a 255
+  ledcWrite(LED, duty);
+  Serial.printf("ADC=%d  PWM=%d  V=%.2f\n", lectura, duty, lectura * 3.3 / 4095.0);
+  delay(100);
+}</pre>
+<p><b>Observa:</b> abre el Serial Plotter y gira el potenciómetro. <b>Reto:</b> suaviza la lectura promediando 10 muestras.</p></div>
+
+<div class="pr"><h3>Práctica 3: temperatura y humedad con DHT22</h3>
+<p><b>Materiales:</b> sensor DHT22 (si es el sensor de 4 pines sin placa, agrega una resistencia de 10 kΩ entre DATA y 3V3; los módulos de 3 pines ya la traen). <b>Librerías</b> (Administrar bibliotecas): “DHT sensor library” de Adafruit y, si lo pide, “Adafruit Unified Sensor”.</p>
+<div id="d3"></div>
+<pre class="cp">#include &lt;DHT.h&gt;
+
+#define PIN_DHT 4
+DHT dht(PIN_DHT, DHT22);
+
+void setup() {
+  Serial.begin(115200);
+  dht.begin();
+}
+
+void loop() {
+  delay(2000);                         // el DHT22 mide cada 2 s como máximo
+  float h = dht.readHumidity();
+  float t = dht.readTemperature();
+  if (isnan(h) || isnan(t)) {
+    Serial.println("Error leyendo el DHT22");
+    return;
+  }
+  Serial.printf("Temperatura: %.1f C   Humedad: %.1f %%\n", t, h);
+}</pre>
+<p><b>Reto:</b> enciende un LED cuando la temperatura supere un umbral que definas, y envía la lectura por WiFi o BLE (pestaña anterior).</p></div>
+
+<div class="pr"><h3>Práctica 4: servomotor controlado con potenciómetro</h3>
+<p><b>Materiales:</b> servo SG90 o similar, potenciómetro de 10 kΩ. <b>Librería:</b> “ESP32Servo”. Un servo pequeño puede funcionar con el 5 V del USB, pero si tiembla o la placa se reinicia usa una fuente externa de 5 V y une su GND con el de la placa.</p>
+<div id="d4"></div>
+<pre class="cp">#include &lt;ESP32Servo.h&gt;
+
+const int PIN_SERVO = 18;
+const int POT = 34;
+Servo servo;
+
+void setup() {
+  Serial.begin(115200);
+  servo.setPeriodHertz(50);              // los servos usan 50 Hz
+  servo.attach(PIN_SERVO, 500, 2400);    // ancho de pulso mínimo y máximo (us)
+}
+
+void loop() {
+  int angulo = map(analogRead(POT), 0, 4095, 0, 180);
+  servo.write(angulo);
+  Serial.println(angulo);
+  delay(20);
+}</pre>
+<p><b>Reto:</b> haz que el servo barra de 0° a 180° y de regreso de forma automática, con la velocidad fijada por el potenciómetro.</p></div>
+</section>
+
+<section id="software" hidden>
+<h2>Programar con Arduino IDE</h2>
+<p>Los pasos 1 a 3 se hacen una sola vez. Los pasos 4 a 7 los repetirás en cada proyecto. Se asume Arduino IDE 2.x.</p>
+
+<div class="step"><i>1</i><div><h3>Instalar el IDE y el driver USB</h3>Descarga Arduino IDE 2 desde arduino.cc. Si al conectar la placa no aparece ningún puerto, instala el driver del conversor USB-serie que traiga (CP210x o CH340) y prueba con un cable USB que transmita datos (hay cables solo de carga).</div></div>
+
+<div class="step"><i>2</i><div><h3>Agregar el soporte para ESP32</h3>
+<p>Abre <b>Archivo → Preferencias</b> y en “Gestor de URLs Adicionales de Tarjetas” pega:</p>
+<pre>https://espressif.github.io/arduino-esp32/package_esp32_index.json</pre>
+<p>Luego abre el <b>Gestor de tarjetas</b> (icono lateral o <b>Herramientas → Placa → Gestor de tarjetas</b>), busca <code>esp32</code> e instala “esp32 by Espressif Systems”. Tarda unos minutos.</p></div></div>
+
+<div class="step"><i>3</i><div><h3>Seleccionar placa y puerto</h3>
+<ul><li><b>Placa</b>: <b>Herramientas → Placa → esp32 → ESP32 Dev Module</b> (sirve para la mayoría). También puedes usar el selector del menú superior.</li>
+<li><b>Puerto</b>: <b>Herramientas → Puerto</b>. En Windows aparece como <code>COM3</code>, <code>COM4</code>…; en Mac como <code>/dev/cu.usbserial-…</code>; en Linux como <code>/dev/ttyUSB0</code> (puede requerir agregar tu usuario al grupo <code>dialout</code>).</li>
+<li>Truco: desconecta y vuelve a conectar la placa; el puerto que aparece o desaparece es el tuyo.</li></ul></div></div>
+
+<div class="step"><i>4</i><div><h3>Administrar librerías</h3>
+<p>Una librería es código ya hecho para usar un sensor, pantalla o servicio. <b>Herramientas → Administrar bibliotecas</b> (o Ctrl+Shift+I): busca por nombre (por ejemplo <code>DHT sensor library</code> o <code>Adafruit SSD1306</code>) y pulsa <b>Instalar</b>. Acepta instalar las dependencias que te proponga.</p>
+<p>Para usarla, agrega al inicio del programa <code>#include &lt;NombreLibreria.h&gt;</code>. Si tienes un archivo .zip: <b>Programa → Incluir biblioteca → Añadir biblioteca .ZIP</b>. Librerías como <code>WiFi.h</code>, <code>Wire.h</code> o <code>SPI.h</code> ya vienen con el soporte ESP32. Los ejemplos están en <b>Archivo → Ejemplos</b>.</p></div></div>
+
+<div class="step"><i>5</i><div><h3>Las partes de un programa (sketch)</h3>
+<p>Haz clic en cada bloque para ver qué hace, y pulsa Ejecutar para simularlo.</p>
+<div class="lab"><div><pre id="code"><span class="seg" data-k="0">#include &lt;Arduino.h&gt;
+#define LED 2
+int cuenta = 0;</span><span class="seg" data-k="1">
+void setup() {
+  Serial.begin(115200);
+  pinMode(LED, OUTPUT);
+}</span><span class="seg" data-k="2">
+void loop() {
+  digitalWrite(LED, HIGH);
+  Serial.println("LED ON");
+  delay(500);
+  digitalWrite(LED, LOW);
+  Serial.println("LED OFF");
+  delay(500);
+  cuenta++;
+}</span></pre>
+<div class="box" id="why">Selecciona un bloque de código.</div></div>
+<div><span class="led" id="led"></span> <button class="run" id="go">Ejecutar</button><label>Pausa (ms): <input type="range" id="dl" min="100" max="1000" step="100" value="500"> <b id="dv">500</b></label>
+<div id="ser" aria-live="off"></div>
+<p style="margin:.4em 0 0"><label>Enviar al ESP32: <input id="tx" style="font:inherit;width:9em"></label> <button class="run" id="snd" style="background:var(--bl)">Enviar</button></p></div></div></div></div>
+
+<div class="step"><i>6</i><div><h3>Compilar y cargar a la placa</h3>
+<p><b>Verificar</b> (✓) compila y revisa errores sin tocar la placa. <b>Subir</b> (→) compila y envía el programa por USB. Abajo verás el progreso y “Hard resetting via RTS pin…” cuando termine.</p>
+<p>Si aparece <code>Connecting......_____</code> y falla, mantén pulsado <b>BOOT</b> mientras sube y suéltalo al ver el porcentaje. Revisa antes de subir:</p>
+<div class="box"><progress id="pg" value="0" max="5"></progress>
+<label class="ck"><input type="checkbox"> Cable USB de datos conectado</label>
+<label class="ck"><input type="checkbox"> Placa correcta seleccionada (ESP32 Dev Module)</label>
+<label class="ck"><input type="checkbox"> Puerto correcto seleccionado</label>
+<label class="ck"><input type="checkbox"> Verificado sin errores</label>
+<label class="ck"><input type="checkbox"> Monitor serie cerrado o en otra velocidad que no bloquee el puerto</label><span id="pgm" class="ok"></span></div>
+<div class="scroll"><table><tr><th>Mensaje</th><th>Causa probable</th></tr>
+<tr><td><code>Failed to connect to ESP32</code></td><td>Mantén BOOT al subir; revisa el cable; prueba otro puerto USB</td></tr>
+<tr><td>No aparece el puerto</td><td>Falta el driver o el cable es solo de carga</td></tr>
+<tr><td><code>'xxx' was not declared</code></td><td>Falta una librería, <code>#include</code>, o hay un error de escritura</td></tr>
+<tr><td><code>Brownout detector was triggered</code></td><td>Alimentación insuficiente: usa otro cable o fuente</td></tr></table></div></div></div>
+
+<div class="step"><i>7</i><div><h3>El Monitor Serie</h3>
+<p>Es tu ventana para “ver” lo que piensa el ESP32 y enviarle texto. Ábrelo con el icono de la lupa (arriba a la derecha) o <b>Ctrl+Shift+M</b>.</p>
+<ul><li>En el código escribe <code>Serial.begin(115200);</code> y en el monitor elige <b>115200 baud</b>. Si no coinciden, verás símbolos raros.</li>
+<li><code>Serial.print()</code> muestra un valor; <code>Serial.println()</code> lo muestra y salta de línea.</li>
+<li>Para recibir texto: <code>if (Serial.available()) { String s = Serial.readStringUntil('\n'); }</code></li>
+<li>Pulsa EN para reiniciar y ver los mensajes de arranque (a 115200).</li>
+<li>El <b>Serial Plotter</b> (Herramientas) dibuja gráficas de números impresos con <code>println</code>: muy útil para sensores.</li></ul>
+<p>Úsalo para depurar: imprime variables en puntos clave y comprueba qué parte del programa se ejecuta. Prueba el cuadro “Enviar al ESP32” del paso 5.</p></div></div>
+
+<h2>Comprueba lo aprendido</h2>
+<div id="quiz"></div>
+</section>
+</main><footer>Material del curso MC4012 Sensores y Actuadores, Ingeniería Mecánica, Universidad EAFIT. Los códigos asumen el paquete ESP32 de Espressif 3.x para Arduino (en 2.x, <code>ledcAttach</code> se reemplaza por <code>ledcSetup</code> + <code>ledcAttachPin</code>).</footer>
+<script>
+const $=s=>document.querySelector(s);
+// Pestañas con hash
+const TB=['hardware','software','conectividad','practicas'];
+function tab(){const h=TB.includes(location.hash.slice(1))?location.hash.slice(1):'hardware';TB.forEach(n=>{$('#'+n).hidden=n!==h;$('#t-'+n).setAttribute('aria-selected',n===h)})}
+TB.forEach(n=>$('#t-'+n).onclick=()=>{location.hash=n;window.scrollTo(0,0)});
+addEventListener('hashchange',tab);tab();
+// Pinout [etiqueta, tipo, tags, descripción]
+const L=[['EN','pw','Reset','Reinicia el chip cuando se lleva a GND. Es el botón EN de la placa.'],['VP · 36','','Entrada sola,ADC','GPIO36, ADC1_0. Solo entrada: no puede ser salida y no tiene resistencias pull-up/down internas.'],['VN · 39','','Entrada sola,ADC','GPIO39, ADC1_3. Solo entrada, sin pull-up interno.'],['34','','Entrada sola,ADC','ADC1_6. Solo entrada. Ideal para potenciómetros.'],['35','','Entrada sola,ADC','ADC1_7. Solo entrada.'],['32','','ADC,Touch','ADC1_4 y Touch9. Entrada y salida.'],['33','','ADC,Touch','ADC1_5 y Touch8. Entrada y salida.'],['25','','DAC,ADC','DAC1 (salida analógica de 8 bits) y ADC2_8.'],['26','','DAC,ADC','DAC2 y ADC2_9.'],['27','','ADC,Touch','Touch7, ADC2_7. Entrada y salida.'],['14','','ADC,Touch,SPI','Touch6, ADC2_6, HSPI CLK. Emite una señal PWM al arrancar.'],['12','','Arranque,ADC,Touch','Pin de arranque (MTDI): si está en HIGH al encender, la placa puede no arrancar. Evítalo con circuitos que lo fuercen.'],['13','','ADC,Touch,SPI','Touch4, ADC2_4, HSPI MOSI.'],['GND','gn','Tierra','Referencia de 0 V. Conecta GND de todos los módulos entre sí.'],['VIN','pw','Alimentación','Entrada o salida de 5 V (la que llega por USB). Puede alimentar la placa con una fuente de 5 V.']];
+const R=[['23','','SPI','VSPI MOSI. Salida de datos SPI.'],['22','','I2C','SCL por defecto del bus I2C.'],['TX0 · 1','','UART','UART0 TX. Va al conversor USB: no lo uses para otra cosa si usas el monitor serie.'],['RX0 · 3','','UART','UART0 RX. Igual que TX0, compartido con el USB.'],['21','','I2C','SDA por defecto del bus I2C.'],['19','','SPI','VSPI MISO.'],['18','','SPI','VSPI SCK (reloj).'],['5','','Arranque,SPI','VSPI SS. Pin de arranque: emite un pulso PWM al encender.'],['TX2 · 17','','UART','UART2 TX. Úsalo para módulos externos.'],['RX2 · 16','','UART','UART2 RX.'],['4','','ADC,Touch','Touch0, ADC2_0. Buen pin de uso general.'],['2','','Arranque,ADC,Touch','Suele tener el LED de la placa. Pin de arranque: debe estar libre o en LOW al subir el programa.'],['15','','Arranque,ADC,Touch','Touch3. Pin de arranque: emite una señal al arrancar.'],['GND','gn','Tierra','Referencia de 0 V.'],['3V3','pw','Alimentación','Salida regulada de 3,3 V para sensores de poca corriente.']];
+const F=['Todos','Entrada sola','ADC','DAC','Touch','I2C','SPI','UART','Arranque','Alimentación'];let cur='Todos';
+function mk(arr,id){const c=$(id);arr.forEach(p=>{const b=document.createElement('button');b.className='pin '+p[1];b.textContent=p[0];b.dataset.t=p[2];b.onclick=()=>{document.querySelectorAll('.pin').forEach(x=>x.classList.remove('sel'));b.classList.add('sel');$('#info').innerHTML='<h3>'+p[0]+'</h3>'+(p[2].split(',').map(t=>'<span class="tag">'+t+'</span>').join(''))+'<p>'+p[3]+'</p>'};c.appendChild(b)})}
+mk(L,'#cl');mk(R,'#cr');
+F.forEach(f=>{const b=document.createElement('button');b.className='chip';b.textContent=f;b.setAttribute('aria-pressed',f==='Todos');b.onclick=()=>{cur=f;document.querySelectorAll('.chip').forEach(x=>x.setAttribute('aria-pressed',x===b));document.querySelectorAll('.pin').forEach(p=>p.classList.toggle('dim',f!=='Todos'&&!p.dataset.t.split(',').includes(f)))};$('#chips').appendChild(b)});
+// Anatomía
+const W=['Zona global: <code>#include</code> trae librerías, <code>#define</code> da nombre a un valor constante y las variables globales se ven desde todo el programa.','<code>setup()</code> se ejecuta una sola vez al encender o reiniciar. Aquí se inicia el serial y se configuran los pines como entrada o salida.','<code>loop()</code> se repite sin parar. Aquí está la lógica: encender el LED, esperar 500 ms con <code>delay</code>, apagarlo y volver a empezar.'];
+document.querySelectorAll('.seg').forEach(s=>s.onclick=()=>{document.querySelectorAll('.seg').forEach(x=>x.classList.remove('on'));s.classList.add('on');$('#why').innerHTML=W[s.dataset.k]});
+// Simulador
+let tm=null,on=false,n=0;const ser=$('#ser');
+function pr(t){ser.innerHTML+=t+'<br>';ser.scrollTop=ser.scrollHeight}
+$('#dl').oninput=e=>{$('#dv').textContent=e.target.value;if(tm){stop();start()}};
+function start(){const d=+$('#dl').value;tm=setInterval(()=>{on=!on;$('#led').classList.toggle('on',on);pr(on?'LED ON':'LED OFF')},d);$('#go').textContent='Detener';$('#go').classList.add('st')}
+function stop(){clearInterval(tm);tm=null;on=false;$('#led').classList.remove('on');$('#go').textContent='Ejecutar';$('#go').classList.remove('st')}
+$('#go').onclick=()=>{if(tm){stop()}else{pr('— Reinicio (115200 baud) —');start()}};
+$('#snd').onclick=()=>{const v=$('#tx').value.trim();if(v){pr('Recibí: '+v);$('#tx').value=''}};
+$('#tx').onkeydown=e=>{if(e.key==='Enter')$('#snd').click()};
+// Checklist
+const ck=[...document.querySelectorAll('.ck input')];ck.forEach(c=>c.onchange=()=>{const k=ck.filter(x=>x.checked).length;$('#pg').value=k;$('#pgm').textContent=k===5?' Listo: ya puedes subir el programa.':''});
+// Diagramas de cableado: fila = [pin, tipo (s/v/g), componente, resistencia opcional]
+const COL={s:'var(--bl)',v:'var(--rd)',g:'var(--ink)'};
+function wire(id,rows){const h=30+rows.length*46;let s='<svg viewBox="0 0 470 '+h+'" role="img" aria-label="Diagrama de cableado" style="width:100%;max-width:540px;background:var(--sf);border:1px solid var(--ln);border-radius:8px"><rect x="10" y="10" width="110" height="'+(h-20)+'" rx="8" fill="var(--gr)"/><text x="65" y="30" fill="#fff" font-size="13" text-anchor="middle" font-weight="700">ESP32</text>';
+rows.forEach((r,i)=>{const y=58+i*46,c=COL[r[1]];s+='<text x="112" y="'+(y+4)+'" fill="#fff" font-size="12" text-anchor="end">'+r[0]+'</text><path d="M120 '+y+(r[3]?'H160l6-9 12 18 12-18 12 18 12-18 6 9H300':'H300')+'" fill="none" stroke="'+c+'" stroke-width="3"/>'+(r[3]?'<text x="190" y="'+(y-14)+'" fill="var(--ink)" font-size="11" text-anchor="middle">'+r[3]+'</text>':'')+'<rect x="300" y="'+(y-17)+'" width="162" height="34" rx="6" fill="var(--bg)" stroke="var(--ink)" stroke-width="2"/><text x="309" y="'+(y+4)+'" fill="var(--ink)" font-size="11.5">'+r[2]+'</text>'});
+$('#'+id).innerHTML=s+'</svg>'}
+wire('d1',[['GPIO4','s','LED ánodo (pata larga)','220 Ω'],['GND','g','LED cátodo (pata corta)'],['GPIO13','s','Pulsador, terminal A'],['GND','g','Pulsador, terminal B']]);
+wire('d2',[['3V3','v','Potenciómetro, extremo 1'],['GPIO34','s','Potenciómetro, cursor'],['GND','g','Potenciómetro, extremo 2'],['GPIO4','s','LED ánodo (pata larga)','220 Ω'],['GND','g','LED cátodo (pata corta)']]);
+wire('d3',[['3V3','v','DHT22 · pin VCC'],['GPIO4','s','DHT22 · pin DATA'],['GND','g','DHT22 · pin GND']]);
+wire('d4',[['VIN (5 V)','v','Servo · cable rojo'],['GPIO18','s','Servo · naranja o amarillo'],['GND','g','Servo · marrón o negro'],['3V3','v','Potenciómetro, extremo 1'],['GPIO34','s','Potenciómetro, cursor'],['GND','g','Potenciómetro, extremo 2']]);
+// Botón copiar en los códigos
+document.querySelectorAll('pre.cp').forEach(p=>{const b=document.createElement('button');b.className='chip';b.textContent='Copiar código';b.onclick=()=>{navigator.clipboard.writeText(p.textContent).then(()=>{b.textContent='Copiado';setTimeout(()=>b.textContent='Copiar código',1500)}).catch(()=>{b.textContent='Selecciona y copia con Ctrl+C'})};p.before(b)});
+// Quiz
+const Q=[['¿Qué modo de WiFi usa el ESP32 para crear su propia red?',['STA','AP','DHCP'],1,'AP (punto de acceso) crea una red propia; STA se conecta a una existente.'],['¿Qué pines ADC dejan de funcionar mientras el WiFi está activo?',['ADC1 (GPIO32 a 39)','ADC2','Ninguno'],1,'El ADC2 lo comparte con el WiFi; usa ADC1 si necesitas WiFi.'],['En BLE, ¿qué propiedad permite que el ESP32 avise al celular cuando un dato cambia?',['READ','WRITE','NOTIFY'],2,'NOTIFY envía el nuevo valor sin que el celular tenga que preguntar.'],['¿Qué identifica al destinatario en ESP-NOW?',['Su dirección IP','Su dirección MAC','Su SSID'],1,'ESP-NOW direcciona por MAC, sin router ni IP.'],['En MQTT, ¿quién reparte los mensajes entre quienes publican y quienes se suscriben?',['El broker','El router','El sensor'],0,'El broker recibe lo publicado en un tópico y lo entrega a los suscritos.'],['¿Qué voltaje soportan los pines GPIO del ESP32?',['5 V','3,3 V','12 V'],1,'Los GPIO trabajan a 3,3 V; 5 V puede dañarlos.'],['¿Qué función se ejecuta una sola vez al iniciar?',['loop()','main()','setup()'],2,'setup() corre una vez; loop() se repite.'],['Ves símbolos raros en el Monitor Serie. ¿Qué revisas primero?',['La velocidad (baud) igual a Serial.begin','El color del cable','La resistencia del LED'],0,'La velocidad del monitor debe coincidir con la del código.'],['¿Qué pines NO debes usar porque conectan la memoria flash?',['GPIO6 a 11','GPIO21 y 22','GPIO32 y 33'],0,'GPIO6 a 11 están ocupados por la flash.'],['Si falla la carga con “Connecting......”, ¿qué haces?',['Mantener pulsado BOOT mientras sube','Cambiar a 9600 baud','Quitar la antena'],0,'BOOT pone el chip en modo de carga manualmente.']];
+Q.forEach((q,i)=>{const d=document.createElement('div');d.className='q';d.innerHTML='<b>'+(i+1)+'. '+q[0]+'</b>';const fb=document.createElement('div');q[1].forEach((o,j)=>{const b=document.createElement('button');b.textContent=o;b.onclick=()=>{d.querySelectorAll('button').forEach(x=>x.className='');b.className=j===q[2]?'good':'bad';fb.innerHTML=j===q[2]?'<span class="ok">¡Correcto!</span> '+q[3]:'<span class="ko">Casi.</span> Intenta de nuevo.'};d.appendChild(b)});d.appendChild(fb);$('#quiz').appendChild(d)});
+</script></body></html>
