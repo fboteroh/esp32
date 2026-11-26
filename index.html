@@ -74,7 +74,7 @@ button.chip{margin:4px 0}
 </style></head><body>
 <header><span class="course">MC4012 · Sensores y Actuadores · Ingeniería Mecánica · Universidad EAFIT</span><h1>ESP32: de la placa al primer programa</h1>
 <p>Una guía para tocar y explorar. Empieza por el hardware (qué trae la placa y cómo conectarla) y sigue con el software (cómo programarla con Arduino IDE). Todo lo resaltado en el pinout y en el simulador es clicable.</p></header>
-<nav role="tablist"><button role="tab" id="t-hardware" aria-selected="true">Hardware</button><button role="tab" id="t-software" aria-selected="false">Software</button><button role="tab" id="t-conectividad" aria-selected="false">Conectividad</button><button role="tab" id="t-practicas" aria-selected="false">Prácticas</button></nav>
+<nav role="tablist"><button role="tab" id="t-hardware" aria-selected="true">Hardware</button><button role="tab" id="t-software" aria-selected="false">Software</button><button role="tab" id="t-conectividad" aria-selected="false">Conectividad</button><button role="tab" id="t-practicas" aria-selected="false">Prácticas</button><button role="tab" id="t-evaluacion" aria-selected="false">Evaluación</button></nav>
 <main>
 <section id="hardware">
 <h2>1. ¿Qué es el ESP32?</h2>
@@ -104,7 +104,42 @@ float volt = v * 3.3 / 4095.0;</pre></details>
 ledcWrite(4, 128);        // 50% de brillo</pre></details>
 <details><summary>Sensores táctiles (touch)</summary><p>Diez pines (T0 a T9) detectan el roce de un dedo sin botón físico. El valor baja cuando tocas el pin.</p><pre>int t = touchRead(T0);   // GPIO4</pre></details>
 <details><summary>UART, I2C y SPI (comunicación)</summary><p><b>UART</b>: dos hilos TX/RX, para GPS, módulos y el monitor serie (UART0 va al USB). <b>I2C</b>: dos hilos SDA y SCL para muchos sensores y pantallas OLED con direcciones distintas (por defecto GPIO21 y GPIO22). <b>SPI</b>: cuatro hilos (MOSI, MISO, SCK, SS), más rápido, para tarjetas SD y pantallas TFT (VSPI: 23, 19, 18, 5).</p><pre>Wire.begin(21, 22);  // I2C
-Serial2.begin(9600, SERIAL_8N1, 16, 17);  // UART2</pre></details>
+Serial2.begin(9600, SERIAL_8N1, 16, 17);  // UART2
+SPI.begin(18, 19, 23, 5);  // SCK, MISO, MOSI, SS</pre>
+<h3 style="margin-top:1em">Comparación de los tres protocolos</h3>
+<div class="scroll"><table><tr><th></th><th>UART</th><th>I2C</th><th>SPI</th></tr>
+<tr><td>Hilos de datos</td><td>2: TX y RX</td><td>2: SDA y SCL</td><td>4: MOSI, MISO, SCK y un SS por dispositivo</td></tr>
+<tr><td>Reloj</td><td>No (asíncrono): ambos acuerdan la velocidad en baudios</td><td>Sí (SCL)</td><td>Sí (SCK)</td></tr>
+<tr><td>Topología</td><td>Punto a punto: 1 a 1</td><td>Bus: un maestro y muchos esclavos, cada uno con su dirección de 7 bits</td><td>Bus: un maestro y muchos esclavos, cada uno con su línea SS</td></tr>
+<tr><td>Velocidad típica</td><td>9600 a 115200 baud</td><td>100 kHz (estándar) o 400 kHz (rápido)</td><td>Varios MHz: la más rápida de las tres</td></tr>
+<tr><td>Sentido de los datos</td><td>Full duplex (envía y recibe a la vez)</td><td>Half duplex (por turnos, misma línea)</td><td>Full duplex</td></tr>
+<tr><td>Pines por defecto en el ESP32</td><td>UART0: TX 1, RX 3 (USB). UART2: TX 17, RX 16</td><td>SDA 21, SCL 22</td><td>VSPI: SCK 18, MISO 19, MOSI 23, SS 5</td></tr>
+<tr><td>Librería de Arduino</td><td><code>Serial</code>, <code>Serial2</code></td><td><code>Wire.h</code></td><td><code>SPI.h</code></td></tr>
+<tr><td>Cómo conectar</td><td>Cruzado: TX de uno a RX del otro, y GND común</td><td>Todos los dispositivos en paralelo a SDA y SCL, con resistencias pull-up de unos 4,7 kΩ a 3V3 (muchos módulos ya las traen)</td><td>SCK, MISO y MOSI compartidos; un SS distinto por cada esclavo</td></tr>
+<tr><td>Ejemplos</td><td>GPS, módulos GSM o Bluetooth clásico, comunicación con PC</td><td>Pantallas OLED, acelerómetros, BME280, relojes RTC</td><td>Tarjeta SD, pantallas TFT, ADC y DAC externos</td></tr>
+<tr><td>Ventaja</td><td>Muy simple</td><td>Pocos cables, muchos dispositivos</td><td>Rápido</td></tr>
+<tr><td>Limitación</td><td>Solo dos dispositivos</td><td>Más lento; dos módulos con la misma dirección chocan</td><td>Más cables</td></tr></table></div>
+<p><b>Práctica útil:</b> si un módulo I2C no responde, este escáner lista las direcciones que encuentra en el bus.</p>
+<pre class="cp">#include &lt;Wire.h&gt;
+
+void setup() {
+  Serial.begin(115200);
+  Wire.begin(21, 22);     // SDA, SCL
+}
+
+void loop() {
+  Serial.println("Buscando dispositivos I2C...");
+  int n = 0;
+  for (byte dir = 1; dir &lt; 127; dir++) {
+    Wire.beginTransmission(dir);
+    if (Wire.endTransmission() == 0) {
+      Serial.printf("Dispositivo en 0x%02X\n", dir);
+      n++;
+    }
+  }
+  if (n == 0) Serial.println("Ninguno: revisa SDA, SCL, GND y alimentación");
+  delay(5000);
+}</pre></details>
 <details><summary>WiFi y Bluetooth</summary><p>Se usan por software, sin hardware externo. Con WiFi puedes conectarte a tu red, crear un servidor web o enviar datos a internet. Con BLE puedes comunicarte con el celular. La antena está en el módulo: no pongas metal ni la tapes.</p><pre>#include &lt;WiFi.h&gt;
 WiFi.begin("MiRed", "clave");</pre></details>
 <details><summary>Ahorro de energía (deep sleep)</summary><p>El chip puede dormir y despertar por un temporizador, un pin o un toque. Dormido consume microamperios en el chip (la placa, por su regulador y el conversor USB, consume bastante más). Útil para proyectos con batería.</p><pre>esp_sleep_enable_timer_wakeup(10 * 1000000ULL); // 10 s
@@ -621,14 +656,19 @@ void loop() {
 <li>El <b>Serial Plotter</b> (Herramientas) dibuja gráficas de números impresos con <code>println</code>: muy útil para sensores.</li></ul>
 <p>Úsalo para depurar: imprime variables en puntos clave y comprueba qué parte del programa se ejecuta. Prueba el cuadro “Enviar al ESP32” del paso 5.</p></div></div>
 
+</section>
+
+<section id="evaluacion" hidden>
 <h2>Comprueba lo aprendido</h2>
+<p>18 preguntas sobre hardware, software, conectividad y prácticas. Cada respuesta se explica al instante y se cuenta tu primer intento.</p>
+<div class="box" style="display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap"><span id="score" aria-live="polite"></span><button class="chip" id="qreset">Reiniciar</button></div>
 <div id="quiz"></div>
 </section>
 </main><footer>Material del curso MC4012 Sensores y Actuadores, Ingeniería Mecánica, Universidad EAFIT. Los códigos asumen el paquete ESP32 de Espressif 3.x para Arduino (en 2.x, <code>ledcAttach</code> se reemplaza por <code>ledcSetup</code> + <code>ledcAttachPin</code>).</footer>
 <script>
 const $=s=>document.querySelector(s);
 // Pestañas con hash
-const TB=['hardware','software','conectividad','practicas'];
+const TB=['hardware','software','conectividad','practicas','evaluacion'];
 function tab(){const h=TB.includes(location.hash.slice(1))?location.hash.slice(1):'hardware';TB.forEach(n=>{$('#'+n).hidden=n!==h;$('#t-'+n).setAttribute('aria-selected',n===h)})}
 TB.forEach(n=>$('#t-'+n).onclick=()=>{location.hash=n;window.scrollTo(0,0)});
 addEventListener('hashchange',tab);tab();
@@ -666,5 +706,31 @@ wire('d4',[['VIN (5 V)','v','Servo · cable rojo'],['GPIO18','s','Servo · naran
 document.querySelectorAll('pre.cp').forEach(p=>{const b=document.createElement('button');b.className='chip';b.textContent='Copiar código';b.onclick=()=>{navigator.clipboard.writeText(p.textContent).then(()=>{b.textContent='Copiado';setTimeout(()=>b.textContent='Copiar código',1500)}).catch(()=>{b.textContent='Selecciona y copia con Ctrl+C'})};p.before(b)});
 // Quiz
 const Q=[['¿Qué modo de WiFi usa el ESP32 para crear su propia red?',['STA','AP','DHCP'],1,'AP (punto de acceso) crea una red propia; STA se conecta a una existente.'],['¿Qué pines ADC dejan de funcionar mientras el WiFi está activo?',['ADC1 (GPIO32 a 39)','ADC2','Ninguno'],1,'El ADC2 lo comparte con el WiFi; usa ADC1 si necesitas WiFi.'],['En BLE, ¿qué propiedad permite que el ESP32 avise al celular cuando un dato cambia?',['READ','WRITE','NOTIFY'],2,'NOTIFY envía el nuevo valor sin que el celular tenga que preguntar.'],['¿Qué identifica al destinatario en ESP-NOW?',['Su dirección IP','Su dirección MAC','Su SSID'],1,'ESP-NOW direcciona por MAC, sin router ni IP.'],['En MQTT, ¿quién reparte los mensajes entre quienes publican y quienes se suscriben?',['El broker','El router','El sensor'],0,'El broker recibe lo publicado en un tópico y lo entrega a los suscritos.'],['¿Qué voltaje soportan los pines GPIO del ESP32?',['5 V','3,3 V','12 V'],1,'Los GPIO trabajan a 3,3 V; 5 V puede dañarlos.'],['¿Qué función se ejecuta una sola vez al iniciar?',['loop()','main()','setup()'],2,'setup() corre una vez; loop() se repite.'],['Ves símbolos raros en el Monitor Serie. ¿Qué revisas primero?',['La velocidad (baud) igual a Serial.begin','El color del cable','La resistencia del LED'],0,'La velocidad del monitor debe coincidir con la del código.'],['¿Qué pines NO debes usar porque conectan la memoria flash?',['GPIO6 a 11','GPIO21 y 22','GPIO32 y 33'],0,'GPIO6 a 11 están ocupados por la flash.'],['Si falla la carga con “Connecting......”, ¿qué haces?',['Mantener pulsado BOOT mientras sube','Cambiar a 9600 baud','Quitar la antena'],0,'BOOT pone el chip en modo de carga manualmente.']];
+Q.length=0;Q.push(
+['Hardware · ¿Qué voltaje soportan los pines GPIO del ESP32?',['5 V','3,3 V','12 V'],1,'Los GPIO trabajan a 3,3 V; 5 V puede dañarlos. Con señales de 5 V usa un convertidor de nivel.'],
+['Hardware · ¿Cuál de estos pines es solo de entrada?',['GPIO34','GPIO25','GPIO4'],0,'GPIO34 a 39 solo pueden ser entradas y no tienen pull-up interno.'],
+['Hardware · ¿Cuál de estos pines tiene un DAC?',['GPIO34','GPIO25','GPIO21'],1,'Solo GPIO25 y GPIO26 tienen DAC de 8 bits.'],
+['Hardware · ¿Qué pines NO debes usar porque conectan la memoria flash?',['GPIO6 a 11','GPIO21 y 22','GPIO32 y 33'],0,'GPIO6 a 11 están ocupados por la flash.'],
+['Hardware · Conectas un LED a un GPIO. ¿Qué necesitas en serie?',['Nada, el pin limita la corriente','Una resistencia de 220 a 330 Ω','Un capacitor de 1000 µF'],1,'La resistencia limita la corriente y protege el LED y el pin.'],
+['Software · ¿Qué función se ejecuta una sola vez al iniciar?',['loop()','main()','setup()'],2,'setup() corre una vez; loop() se repite sin fin.'],
+['Software · Ves símbolos raros en el Monitor Serie. ¿Qué revisas primero?',['La velocidad (baud) igual a Serial.begin','El color del cable','La resistencia del LED'],0,'La velocidad del monitor debe coincidir con la del código.'],
+['Software · Si falla la carga con Connecting......, ¿qué haces?',['Mantener pulsado BOOT mientras sube','Cambiar a 9600 baud','Quitar la antena'],0,'BOOT pone el chip en modo de carga manualmente.'],
+['Software · ¿Dónde instalas una librería, por ejemplo la del DHT22?',['Administrar bibliotecas','Gestor de tarjetas','Monitor serie'],0,'Herramientas → Administrar bibliotecas (Ctrl+Shift+I).'],
+['Software · ¿Qué botón compila y revisa errores sin cargar el programa a la placa?',['Verificar (✓)','Subir (→)','EN'],0,'Verificar solo compila; Subir además lo carga.'],
+['Conectividad · ¿Qué modo de WiFi usa el ESP32 para crear su propia red?',['STA','AP','DHCP'],1,'AP (punto de acceso) crea una red propia; STA se conecta a una existente.'],
+['Conectividad · ¿Qué pines ADC dejan de funcionar mientras el WiFi está activo?',['ADC1 (GPIO32 a 39)','ADC2','Ninguno'],1,'El ADC2 lo comparte con el WiFi; usa ADC1 si necesitas WiFi.'],
+['Conectividad · En BLE, ¿qué propiedad permite que el ESP32 avise al celular cuando un dato cambia?',['READ','WRITE','NOTIFY'],2,'NOTIFY envía el nuevo valor sin que el celular tenga que preguntar.'],
+['Conectividad · ¿Qué identifica al destinatario en ESP-NOW?',['Su dirección IP','Su dirección MAC','Su SSID'],1,'ESP-NOW direcciona por MAC, sin router ni IP.'],
+['Conectividad · En MQTT, ¿quién reparte los mensajes entre quienes publican y quienes se suscriben?',['El broker','El router','El sensor'],0,'El broker recibe lo publicado en un tópico y lo entrega a los suscritos.'],
+['Comunicación · ¿Qué bus usa solo dos hilos de datos (SDA y SCL) y permite muchos dispositivos por dirección?',['UART','I2C','SPI'],1,'I2C: dos hilos y direcciones de 7 bits. Revisa la tabla comparativa en Hardware.'],
+['Prácticas · ¿Qué hace map(lectura, 0, 4095, 0, 255)?',['Convierte el rango del ADC al rango del PWM','Lee el pin analógico','Espera 255 ms'],0,'Reescala un valor de 0 a 4095 a uno de 0 a 255.'],
+['Prácticas · ¿Por qué un pulsador a GND no necesita resistencia externa con INPUT_PULLUP?',['El pin trae una resistencia interna que lo mantiene en HIGH en reposo','El ESP32 ignora el rebote','El pulsador ya la trae'],0,'La pull-up interna mantiene HIGH en reposo; al pulsar, el pin pasa a LOW.']
+);
 Q.forEach((q,i)=>{const d=document.createElement('div');d.className='q';d.innerHTML='<b>'+(i+1)+'. '+q[0]+'</b>';const fb=document.createElement('div');q[1].forEach((o,j)=>{const b=document.createElement('button');b.textContent=o;b.onclick=()=>{d.querySelectorAll('button').forEach(x=>x.className='');b.className=j===q[2]?'good':'bad';fb.innerHTML=j===q[2]?'<span class="ok">¡Correcto!</span> '+q[3]:'<span class="ko">Casi.</span> Intenta de nuevo.'};d.appendChild(b)});d.appendChild(fb);$('#quiz').appendChild(d)});
+// Marcador del quiz (cuenta el primer intento)
+const dn={};
+const sc=()=>{const k=Object.keys(dn).length,ok=Object.values(dn).filter(Boolean).length;$('#score').textContent='Respondidas: '+k+' de '+Q.length+' · Correctas a la primera: '+ok+(k===Q.length?(ok>=Q.length*0.8?' · ¡Excelente!':' · Repasa las secciones donde fallaste y vuelve a intentarlo.'):'')};
+$('#quiz').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const i=[...document.querySelectorAll('#quiz .q')].indexOf(b.closest('.q'));if(!(i in dn))dn[i]=b.classList.contains('good');sc()});
+$('#qreset').onclick=()=>{Object.keys(dn).forEach(k=>delete dn[k]);document.querySelectorAll('#quiz .q').forEach(d=>{d.querySelectorAll('button').forEach(b=>b.className='');d.lastChild.innerHTML=''});sc()};
+sc();
 </script></body></html>
